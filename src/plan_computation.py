@@ -4,6 +4,7 @@ import math
 from src.data_model import Camera, DatasetSpec, Waypoint
 from src.camera_utils import (
     compute_image_footprint_on_surface,
+    compute_image_footprint_non_nadir,
     compute_ground_sampling_distance,
 )
 
@@ -20,7 +21,20 @@ def compute_distance_between_images(
     Returns:
         The horizontal and vertical distance between images (in meters).
     """
-    raise NotImplementedError()
+    # Use non-nadir footprint if camera_angle is not 90 (nadir)
+    if hasattr(dataset_spec, 'camera_angle') and dataset_spec.camera_angle != 90.0:
+        footprint_x, footprint_y = compute_image_footprint_non_nadir(
+            camera, dataset_spec.height, dataset_spec.camera_angle
+        )
+    else:
+        footprint_x, footprint_y = compute_image_footprint_on_surface(
+            camera, dataset_spec.height
+        )
+
+    distance_x = footprint_x * (1 - dataset_spec.overlap)
+    distance_y = footprint_y * (1 - dataset_spec.sidelap)
+
+    return (distance_x, distance_y)
 
 
 def compute_speed_during_photo_capture(
